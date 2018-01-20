@@ -33,7 +33,7 @@ $publicApi->getDepths($pairs); // limit - 50 pairs
 $publicApi->getDepth('btc', 'eth');
 $publicApi->getTrades($pairs); // limit - 50 pairs
 $publicApi->getTrade('btc', 'eth');
-```r
+```
 
 ### Trade Api usage
 
