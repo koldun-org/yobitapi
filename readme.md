@@ -4,6 +4,7 @@ This is a implementation of Yobit Api on PHP.
 
 Api documentation: https://yobit.net/en/api
 
+
 # Installation
 
 #### 1. Append to composer package requires
@@ -12,6 +13,7 @@ composer require olegstyle/yobitapi
 ```
 
 #### 2. Use it `^_^`
+
 
 # How to use?
 
