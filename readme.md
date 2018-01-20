@@ -11,7 +11,7 @@ Will be soon
 # How to use?
 
 Like a original api package have public api (`\OlegStyle\YobitApi\YobitPublicApi`)
-and trade api (`OlegStyle\YobitApi\YobitTradeApi`)
+and trade api (`\OlegStyle\YobitApi\YobitTradeApi`)
 
 ### Public Api usage
 
@@ -28,7 +28,7 @@ $publicApi->getDepths($pairs); // limit - 50 pairs
 $publicApi->getDepth('btc', 'eth');
 $publicApi->getTrades($pairs); // limit - 50 pairs
 $publicApi->getTrade('btc', 'eth');
-```
+```r
 
 ### Trade Api usage
 
