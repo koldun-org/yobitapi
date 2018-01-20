@@ -6,7 +6,12 @@ Api documentation: https://yobit.net/en/api
 
 # Installation
 
-Will be soon
+#### 1. Append to composer package requires
+```
+composer require olegstyle/yobitapi
+```
+
+#### 2. Use it `^_^`
 
 # How to use?
 
