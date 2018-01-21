@@ -72,7 +72,7 @@ class YobitTradeApi
             'phantomjs '.
             __DIR__ . '/cloudflare-challenge.js ' .
             ((string) $this->client->getConfig('base_uri')) .
-            ' ' . http_build_query(array_filter($post), '', '&')
+            ' "' . http_build_query(array_filter($post), '', '&') . '"'
         );
         if ($result === null) {
             throw new ApiDDosException();

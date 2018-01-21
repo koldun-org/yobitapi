@@ -73,7 +73,7 @@ antoligy.cloudflareChallenge = {
             }, self.timeout);
         };
         if (this.post) {
-            this.page.open(this.url, 'post', post, handle);
+            this.page.open(this.url, 'post', this.post, handle);
         } else {
             this.page.open(this.url, handle);
         }
