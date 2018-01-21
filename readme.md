@@ -16,8 +16,10 @@ composer require olegstyle/yobitapi
 It needs for get around Cloudflare.
 PhantomJS installation guide for ubuntu on down of readme
 
+#### 3. Make sure that you are not using php in safe mode
+Another way PhantomJS will not be working 
 
-#### 3. Use it `^_^`
+#### 4. Use it `^_^`
 
 
 # How to use?
