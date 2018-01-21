@@ -4,7 +4,7 @@ namespace OlegStyle\YobitApi;
 
 use GuzzleHttp\Exception\ClientException;
 use GuzzleHttp\Exception\RequestException;
-use GuzzleHttp\Exception\ServerException;
+use OlegStyle\YobitApi\Exceptions\ApiDDosException;
 use OlegStyle\YobitApi\Exceptions\ApiDisabledException;
 use OlegStyle\YobitApi\Models\CurrencyPair;
 use GuzzleHttp\Client;
@@ -25,19 +25,27 @@ class YobitPublicApi
      */
     protected $client;
 
+    /**
+     * @var string
+     */
+    protected $userAgent;
+
     public function __construct()
     {
+        $this->userAgent = 'Mozilla/5.0 (Windows; U; Windows NT 5.0; en-US; rv:1.4) Gecko/20030624 Netscape/7.1 (ax)';
+
         $this->client = new Client([
             'base_uri' => static::BASE_URI,
             'timeout' => 30.0,
             'headers' => [
+                'User-Agent' => $this->userAgent,
                 "Content-type: application/json"
             ]
         ]);
     }
 
     /**
-     * @throws ApiDisabledException
+     * @throws ApiDisabledException|ApiDDosException
      */
     public function sendResponse(string $url): ?array
     {
@@ -53,7 +61,7 @@ class YobitPublicApi
     }
 
     /**
-     * @throws ApiDisabledException
+     * @throws ApiDisabledException|ApiDDosException
      */
     public function handleResponse(?ResponseInterface $response): ?array
     {
@@ -63,12 +71,12 @@ class YobitPublicApi
 
         $responseBody = (string) $response->getBody();
 
-        if ($response->getStatusCode() === 503) {
-            throw new ApiDisabledException($responseBody);
+        if ($response->getStatusCode() === 503) { // cloudflare ddos protection
+            throw new ApiDDosException($responseBody);
         }
 
         if (preg_match('/ddos/i', $responseBody)) {
-            throw new ApiDisabledException($responseBody);
+            throw new ApiDDosException($responseBody);
         }
 
         return json_decode($responseBody, true);
@@ -77,7 +85,7 @@ class YobitPublicApi
     /**
      * Get info about currencies
      *
-     * @throws ApiDisabledException
+     * @throws ApiDisabledException|ApiDDosException
      */
     public function getInfo(): ?array
     {
@@ -102,18 +110,20 @@ class YobitPublicApi
     /**
      * @param CurrencyPair[] $pairs -> example ['ltc' => 'btc']
      * @return array|null
+     *
+     * @throws ApiDisabledException|ApiDDosException
      */
     public function getDepths($pairs)
     {
         $query = $this->prepareQueryForPairs($pairs);
-        $response = $this->client->get('depth/' . $query);
-        $result = json_decode((string) $response->getBody(), true);
 
-        return $result;
+        return $this->sendResponse('depth/' . $query);
     }
 
     /**
      * @return array|null
+     *
+     * @throws ApiDisabledException|ApiDDosException
      */
     public function getDepth(string $from, string $to)
     {
@@ -124,7 +134,7 @@ class YobitPublicApi
      * @param CurrencyPair[] $pairs -> example ['ltc' => 'btc']
      * @return array|null
      *
-     * @throws ApiDisabledException
+     * @throws ApiDisabledException|ApiDDosException
      */
     public function getTrades(array $pairs)
     {
@@ -136,7 +146,7 @@ class YobitPublicApi
     /**
      * @return array|null
      *
-     * @throws ApiDisabledException
+     * @throws ApiDisabledException|ApiDDosException
      */
     public function getTrade(string $from, string $to)
     {
@@ -146,7 +156,8 @@ class YobitPublicApi
     /**
      * @param CurrencyPair[] $pairs -> example ['ltc' => 'btc']
      * @return array|null
-     * @throws ApiDisabledException
+     *
+     * @throws ApiDisabledException|ApiDDosException
      */
     public function getTickers(array $pairs)
     {
@@ -157,7 +168,8 @@ class YobitPublicApi
 
     /**
      * @return array|null
-     * @throws ApiDisabledException
+     *
+     * @throws ApiDisabledException|ApiDDosException
      */
     public function getTicker(string $from, string $to)
     {
