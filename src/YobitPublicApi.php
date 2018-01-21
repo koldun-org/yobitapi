@@ -2,9 +2,7 @@
 
 namespace OlegStyle\YobitApi;
 
-use GuzzleHttp\Cookie\CookieJar;
 use GuzzleHttp\Cookie\FileCookieJar;
-use GuzzleHttp\Cookie\SetCookie;
 use GuzzleHttp\Exception\ClientException;
 use GuzzleHttp\Exception\RequestException;
 use OlegStyle\YobitApi\Exceptions\ApiDDosException;
