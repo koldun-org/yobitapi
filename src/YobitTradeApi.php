@@ -3,7 +3,13 @@
 namespace OlegStyle\YobitApi;
 
 use GuzzleHttp\Client;
+use GuzzleHttp\Cookie\FileCookieJar;
+use GuzzleHttp\Exception\ClientException;
+use GuzzleHttp\Exception\RequestException;
+use OlegStyle\YobitApi\Exceptions\ApiDDosException;
+use OlegStyle\YobitApi\Exceptions\ApiDisabledException;
 use OlegStyle\YobitApi\Models\CurrencyPair;
+use Psr\Http\Message\ResponseInterface;
 
 /**
  * Class YobitTradeApi
@@ -30,15 +36,62 @@ class YobitTradeApi
      */
     protected $privateApiKey;
 
+    /**
+     * @var FileCookieJar
+     */
+    protected $cookies;
+
     public function __construct(string $publicKey, string $privateKey)
     {
         $this->publicApiKey = $publicKey;
         $this->privateApiKey = $privateKey;
+        $this->cookies = new FileCookieJar($this->getCookieFilePath(), true);
 
         $this->client = new Client([
             'base_uri' => static::BASE_URI,
+            'cookies' => $this->cookies,
             'timeout' => 30.0,
         ]);
+    }
+
+    protected function getCookieFilePath(): string
+    {
+        return __DIR__ . '/yobit_trade_cookie.txt';
+    }
+
+    /**
+     * @throws ApiDDosException|ApiDisabledException
+     */
+    protected function cloudFlareChallenge(array $post): ?array
+    {
+        if (!function_exists('shell_exec')) {
+            throw new ApiDDosException();
+        }
+
+        $result = shell_exec(
+            'phantomjs '.
+            __DIR__ . '/cloudflare-challenge.js ' .
+            ((string) $this->client->getConfig('base_uri')) .
+            ' ' . http_build_query(array_filter($post), '', '&')
+        );
+        if ($result === null) {
+            throw new ApiDDosException();
+        }
+
+        $result = json_decode($result, true);
+        foreach ($result as &$el) {
+            $newArray = [];
+            foreach ($el as $key => $value) {
+                $newArray[ucfirst($key)] = $value;
+            }
+            $el = $newArray;
+        }
+        $result = json_encode($result);
+        file_put_contents($this->getCookieFilePath(), $result);
+
+        $this->cookies = new FileCookieJar($this->getCookieFilePath(), true);
+
+        return $this->getResponse('', $post, true);
     }
 
     public function getNonceFileName()
@@ -73,21 +126,63 @@ class YobitTradeApi
         return $sign;
     }
 
-    public function getResponse(string $method, array $post = []): array
+    /**
+     * @throws ApiDDosException|ApiDisabledException
+     */
+    public function getResponse(string $method, array $post = [], ?bool $retry = false): array
     {
-        $post['method'] = $method;
-        $post['nonce'] = $this->getNextNonce();
+        if (!$retry) {
+            $post['method'] = $method;
+            $post['nonce'] = $this->getNextNonce();
+        }
 
-        $response = $this->client->post('', [
-            'form_params' => $post,
-            'headers' => [
-                "Sign" => $this->generateSign($post),
-                "Key" => $this->publicApiKey,
-            ],
-        ]);
+        try {
+            $response = $this->client->post('', [
+                'form_params' => $post,
+                'headers' => [
+                    "Sign" => $this->generateSign($post),
+                    "Key" => $this->publicApiKey,
+                ],
+            ]);
+        } catch (ClientException $ex) {
+            $response = $ex->getResponse();
+        } catch (RequestException $ex) {
+            $response = $ex->getResponse();
+        }
 
-        return json_decode((string) $response->getBody(), true);
+        try {
+            return $this->handleResponse($response);
+        } catch (ApiDDosException $ex) {
+            if ($retry) {
+                throw $ex;
+            }
+
+            return $this->cloudFlareChallenge($post);
+        }
     }
+
+    /**
+     * @throws ApiDisabledException|ApiDDosException
+     */
+    public function handleResponse(?ResponseInterface $response): ?array
+    {
+        if ($response === null) {
+            throw new ApiDisabledException();
+        }
+
+        $responseBody = (string) $response->getBody();
+
+        if ($response->getStatusCode() === 503) { // cloudflare ddos protection
+            throw new ApiDDosException($responseBody);
+        }
+
+        if (preg_match('/ddos/i', $responseBody)) {
+            throw new ApiDDosException($responseBody);
+        }
+
+        return json_decode($responseBody, true);
+    }
+
 
     public function getInfo(): array
     {

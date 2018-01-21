@@ -41,6 +41,7 @@ antoligy.cloudflareChallenge = {
     page:		false,
     url:		false,
     userAgent:	false,
+    post:       false,
 
     /**
      * Initiate object.
@@ -50,6 +51,9 @@ antoligy.cloudflareChallenge = {
         this.system		= require('system');
         this.page		= this.webpage.create();
         this.url		= this.system.args[1];
+        if (this.system.args[2]) {
+            this.post = this.system.args[2];
+        }
         this.userAgent	= 'Mozilla/5.0 (Windows NT 6.3; rv:36.0) Gecko/20100101 Firefox/36.0';
         this.timeout	= 6000;
     },
@@ -61,12 +65,18 @@ antoligy.cloudflareChallenge = {
     solve: function() {
         var self = this;
         this.page.settings.userAgent = this.userAgent;
-        this.page.open(this.url, function(status) {
+
+        var handle = function(status) {
             setTimeout(function() {
                 console.log(JSON.stringify(phantom.cookies));
                 phantom.exit()
             }, self.timeout);
-        });
+        };
+        if (this.post) {
+            this.page.open(this.url, 'post', post, handle);
+        } else {
+            this.page.open(this.url, handle);
+        }
     }
 
 }
