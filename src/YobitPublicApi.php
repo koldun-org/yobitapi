@@ -98,7 +98,7 @@ class YobitPublicApi
     {
         try {
             $response = $this->client->get($url, [
-                'cookies' => $this->cookies
+                'cookies' => $this->cookies,
             ]);
         } catch (ClientException $ex) {
             $response = $ex->getResponse();
@@ -109,10 +109,11 @@ class YobitPublicApi
         try {
             return $this->handleResponse($response);
         } catch (ApiDDosException $ex) {
-            if (!$afterCloudFlare) {
-                return $this->cloudFlareChallenge($url);
+            if ($afterCloudFlare) {
+                throw $ex;
             }
-            throw $ex;
+
+            return $this->cloudFlareChallenge($url);
         }
     }
 
