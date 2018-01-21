@@ -39,8 +39,8 @@ class YobitPublicApi
     public function __construct()
     {
         $this->userAgent = 'Mozilla/5.0 (Windows NT 6.3; rv:36.0) Gecko/20100101 Firefox/36.0';
-
         $this->cookies = new FileCookieJar($this->getCookieFilePath(), true);
+
         $this->client = new Client([
             'base_uri' => static::BASE_URI,
             'timeout' => 30.0,
