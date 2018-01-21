@@ -47,7 +47,7 @@ class YobitPublicApi
             'cookies' => $this->cookies,
             'headers' => [
                 'User-Agent' => $this->userAgent,
-                "Content-type: application/json"
+                'Content-type' => 'application/json',
             ]
         ]);
     }
