@@ -2,3 +2,5 @@ composer.lock
 vendor
 build
 src/yobit_cookie.txt
+src/yobit_nonce.txt
+src/yobit_nonce_*.txt

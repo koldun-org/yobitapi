@@ -15,8 +15,6 @@ class YobitTradeApi
 {
     const BASE_URI = 'https://yobit.net/tapi/';
 
-    const FILE_WITH_NONCE = __DIR__ . '/yobit_nonce.txt';
-
     /**
      * @var Client
      */
@@ -43,15 +41,26 @@ class YobitTradeApi
         ]);
     }
 
+    public function getNonceFileName()
+    {
+        return 'yobit_nonce_' . md5($this->publicApiKey . $this->privateApiKey) . '.txt';
+    }
+
+    public function getNonceFilePath()
+    {
+        return __DIR__ . '/' . $this->getNonceFileName();
+    }
+
     protected function getNextNonce(): string
     {
-        if (file_exists(self::FILE_WITH_NONCE)) {
-            $nonce = file_get_contents(self::FILE_WITH_NONCE);
+        $noncePath = $this->getNonceFilePath();
+        if (file_exists($noncePath)) {
+            $nonce = (int) file_get_contents($noncePath);
         } else {
             $nonce = 0;
         }
         $nonce += 1;
-        file_put_contents(self::FILE_WITH_NONCE, $nonce);
+        file_put_contents($noncePath, $nonce);
 
         return $nonce;
     }
