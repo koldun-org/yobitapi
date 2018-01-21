@@ -1,3 +1,4 @@
 composer.lock
 vendor
 build
+src/yobit_cookie.txt

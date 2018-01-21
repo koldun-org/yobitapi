@@ -2,6 +2,9 @@
 
 namespace OlegStyle\YobitApi;
 
+use GuzzleHttp\Cookie\CookieJar;
+use GuzzleHttp\Cookie\FileCookieJar;
+use GuzzleHttp\Cookie\SetCookie;
 use GuzzleHttp\Exception\ClientException;
 use GuzzleHttp\Exception\RequestException;
 use OlegStyle\YobitApi\Exceptions\ApiDDosException;
@@ -30,13 +33,20 @@ class YobitPublicApi
      */
     protected $userAgent;
 
+    /**
+     * @var FileCookieJar
+     */
+    protected $cookies;
+
     public function __construct()
     {
-        $this->userAgent = 'Mozilla/5.0 (Windows; U; Windows NT 5.0; en-US; rv:1.4) Gecko/20030624 Netscape/7.1 (ax)';
+        $this->userAgent = 'Mozilla/5.0 (Windows NT 6.3; rv:36.0) Gecko/20100101 Firefox/36.0';
 
+        $this->cookies = new FileCookieJar($this->getCookieFilePath(), true);
         $this->client = new Client([
             'base_uri' => static::BASE_URI,
             'timeout' => 30.0,
+            'cookies' => $this->cookies,
             'headers' => [
                 'User-Agent' => $this->userAgent,
                 "Content-type: application/json"
@@ -44,20 +54,68 @@ class YobitPublicApi
         ]);
     }
 
+    protected function getCookieFilePath(): string
+    {
+        return __DIR__ . '/yobit_cookie.txt';
+    }
+
+    /**
+     * @throws ApiDDosException|ApiDisabledException
+     */
+    protected function cloudFlareChallenge(string $url): ?array
+    {
+        if (!function_exists('shell_exec')) {
+            throw new ApiDDosException();
+        }
+
+        $result = shell_exec(
+            'phantomjs '.
+            __DIR__ . '/cloudflare-challenge.js ' .
+            ((string) $this->client->getConfig('base_uri')) . $url
+        );
+        if ($result === null) {
+            throw new ApiDDosException();
+        }
+
+        $result = json_decode($result, true);
+        foreach ($result as &$el) {
+            $newArray = [];
+            foreach ($el as $key => $value) {
+                $newArray[ucfirst($key)] = $value;
+            }
+            $el = $newArray;
+        }
+        $result = json_encode($result);
+        file_put_contents($this->getCookieFilePath(), $result);
+
+        $this->cookies = new FileCookieJar($this->getCookieFilePath(), true);
+
+        return $this->sendResponse($url, true);
+    }
+
     /**
      * @throws ApiDisabledException|ApiDDosException
      */
-    public function sendResponse(string $url): ?array
+    public function sendResponse(string $url, bool $afterCloudFlare = false): ?array
     {
         try {
-            $response = $this->client->get($url);
+            $response = $this->client->get($url, [
+                'cookies' => $this->cookies
+            ]);
         } catch (ClientException $ex) {
             $response = $ex->getResponse();
         } catch (RequestException $ex) {
             $response = $ex->getResponse();
         }
 
-        return $this->handleResponse($response);
+        try {
+            return $this->handleResponse($response);
+        } catch (ApiDDosException $ex) {
+            if (!$afterCloudFlare) {
+                return $this->cloudFlareChallenge($url);
+            }
+            throw $ex;
+        }
     }
 
     /**

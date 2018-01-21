@@ -12,7 +12,12 @@ Api documentation: https://yobit.net/en/api
 composer require olegstyle/yobitapi
 ```
 
-#### 2. Use it `^_^`
+#### 2. Install PhantomJS. 
+It needs for get around Cloudflare.
+PhantomJS installation guide for ubuntu on down of readme
+
+
+#### 3. Use it `^_^`
 
 
 # How to use?
@@ -59,3 +64,34 @@ $tradeApi->getActiveOrders( // Method returns list of user's active orders (trad
 $tradeApi->getOrderInfo($orderId); // Method returns detailed information about the chosen order (trade)
 $tradeApi->cancelOrder($orderId); // Method cancells the chosen order
 ```
+
+
+# PhantomJS Installing
+
+Before installing PhantomJS, you will need to install some required packages on your system. You can install all of them with the following command:
+
+```
+sudo apt-get install build-essential chrpath libssl-dev libxft-dev libfreetype6-dev libfreetype6 libfontconfig1-dev libfontconfig1 -y
+```
+
+Next, you will need to download the PhantomJS. You can download the latest stable version of the PhantomJS from their official website. Run the following command to download PhantomJS:
+
+```
+sudo wget https://bitbucket.org/ariya/phantomjs/downloads/phantomjs-2.1.1-linux-x86_64.tar.bz2
+```
+
+Once the download is complete, extract the downloaded archive file to desired system location:
+```
+sudo tar xvjf phantomjs-2.1.1-linux-x86_64.tar.bz2 -C /usr/local/share/
+```
+Next, create a symlink of PhantomJS binary file to systems bin dirctory:
+
+```
+sudo ln -s /usr/local/share/phantomjs-2.1.1-linux-x86_64/bin/phantomjs /usr/local/bin/
+```
+
+PhantomJS is now installed on your system. You can now verify the installed version of PhantomJS with the following command:
+```
+phantomjs --version
+```
+
