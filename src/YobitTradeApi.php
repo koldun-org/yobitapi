@@ -139,6 +139,7 @@ class YobitTradeApi
         try {
             $response = $this->client->post('', [
                 'form_params' => $post,
+                'cookies' => $this->cookies,
                 'headers' => [
                     "Sign" => $this->generateSign($post),
                     "Key" => $this->publicApiKey,
