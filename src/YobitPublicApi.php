@@ -2,8 +2,13 @@
 
 namespace OlegStyle\YobitApi;
 
+use GuzzleHttp\Exception\ClientException;
+use GuzzleHttp\Exception\RequestException;
+use GuzzleHttp\Exception\ServerException;
+use OlegStyle\YobitApi\Exceptions\ApiDisabledException;
 use OlegStyle\YobitApi\Models\CurrencyPair;
 use GuzzleHttp\Client;
+use Psr\Http\Message\ResponseInterface;
 
 /**
  * Class YobitPublicApi
@@ -14,6 +19,7 @@ use GuzzleHttp\Client;
 class YobitPublicApi
 {
     const BASE_URI = 'https://yobit.net/api/3/';
+    
     /**
      * @var Client
      */
@@ -31,16 +37,51 @@ class YobitPublicApi
     }
 
     /**
+     * @throws ApiDisabledException
+     */
+    public function sendResponse(string $url): ?array
+    {
+        try {
+            $response = $this->client->get($url);
+        } catch (ClientException $ex) {
+            $response = $ex->getResponse();
+        } catch (RequestException $ex) {
+            $response = $ex->getResponse();
+        }
+
+        return $this->handleResponse($response);
+    }
+
+    /**
+     * @throws ApiDisabledException
+     */
+    public function handleResponse(?ResponseInterface $response): ?array
+    {
+        if ($response === null) {
+            throw new ApiDisabledException();
+        }
+
+        $responseBody = (string) $response->getBody();
+
+        if ($response->getStatusCode() === 503) {
+            throw new ApiDisabledException($responseBody);
+        }
+
+        if (preg_match('/ddos/i', $responseBody)) {
+            throw new ApiDisabledException($responseBody);
+        }
+
+        return json_decode($responseBody, true);
+    }
+
+    /**
      * Get info about currencies
      *
-     * @return array|null
+     * @throws ApiDisabledException
      */
-    public function getInfo()
+    public function getInfo(): ?array
     {
-        $response = $this->client->get('info');
-        $result = json_decode((string) $response->getBody(), true);
-
-        return $result;
+        return $this->sendResponse('info');
     }
 
     /**
@@ -82,18 +123,20 @@ class YobitPublicApi
     /**
      * @param CurrencyPair[] $pairs -> example ['ltc' => 'btc']
      * @return array|null
+     *
+     * @throws ApiDisabledException
      */
     public function getTrades(array $pairs)
     {
         $query = $this->prepareQueryForPairs($pairs);
-        $response = $this->client->get('trades/' . $query);
-        $result = json_decode((string) $response->getBody(), true);
 
-        return $result;
+        return $this->sendResponse('trades/' . $query);
     }
 
     /**
      * @return array|null
+     *
+     * @throws ApiDisabledException
      */
     public function getTrade(string $from, string $to)
     {
@@ -103,18 +146,18 @@ class YobitPublicApi
     /**
      * @param CurrencyPair[] $pairs -> example ['ltc' => 'btc']
      * @return array|null
+     * @throws ApiDisabledException
      */
     public function getTickers(array $pairs)
     {
         $query = $this->prepareQueryForPairs($pairs);
-        $response = $this->client->get('ticker/' . $query);
-        $result = json_decode((string) $response->getBody(), true);
 
-        return $result;
+        return $this->sendResponse('ticker/' . $query);
     }
 
     /**
      * @return array|null
+     * @throws ApiDisabledException
      */
     public function getTicker(string $from, string $to)
     {
