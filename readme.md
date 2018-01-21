@@ -66,6 +66,12 @@ $tradeApi->cancelOrder($orderId); // Method cancells the chosen order
 ```
 
 
+# Thanks to
+
+- :+1: A VERY thanks to **[Antologi](https://gist.github.com/antoligy)** for **[cloudflare-challenge.js](https://gist.github.com/antoligy/f4f084b87946f84a89b4)**
+- :+1: All the amazing people who make [issues](https://github.com/olegstyle/yobitapi/issues) and [pull requests](https://github.com/olegstyle/yobitapi/pulls)!
+
+
 # PhantomJS Installing
 
 Before installing PhantomJS, you will need to install some required packages on your system. You can install all of them with the following command:
@@ -94,4 +100,3 @@ PhantomJS is now installed on your system. You can now verify the installed vers
 ```
 phantomjs --version
 ```
-
