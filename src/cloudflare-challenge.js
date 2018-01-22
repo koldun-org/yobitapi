@@ -42,6 +42,18 @@ antoligy.cloudflareChallenge = {
     url:		false,
     userAgent:	false,
     post:       false,
+    headers:    false,
+
+    parseQuery: function(queryString) {
+        var query = {};
+        var pairs = (queryString[0] === '?' ? queryString.substr(1) : queryString).split('&');
+        for (var i = 0; i < pairs.length; i++) {
+            var pair = pairs[i].split('=');
+            query[decodeURIComponent(pair[0])] = decodeURIComponent(pair[1] || '');
+        }
+
+        return query;
+    },
 
     /**
      * Initiate object.
@@ -54,6 +66,9 @@ antoligy.cloudflareChallenge = {
         if (this.system.args[2]) {
             this.post = this.system.args[2];
         }
+        if (this.system.args[3]) {
+            this.headers = this.parseQuery(this.system.args[3]);
+        }
         this.userAgent	= 'Mozilla/5.0 (Windows NT 6.3; rv:36.0) Gecko/20100101 Firefox/36.0';
         this.timeout	= 6000;
     },
@@ -65,11 +80,14 @@ antoligy.cloudflareChallenge = {
     solve: function() {
         var self = this;
         this.page.settings.userAgent = this.userAgent;
+        if (this.headers) {
+            this.page.customHeaders = this.headers;
+        }
 
         var handle = function(status) {
             setTimeout(function() {
                 console.log(JSON.stringify(phantom.cookies));
-                phantom.exit()
+                phantom.exit();
             }, self.timeout);
         };
         if (this.post) {

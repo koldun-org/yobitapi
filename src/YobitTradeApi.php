@@ -37,6 +37,11 @@ class YobitTradeApi
     protected $privateApiKey;
 
     /**
+     * @var string
+     */
+    protected $userAgent;
+
+    /**
      * @var FileCookieJar
      */
     protected $cookies;
@@ -45,12 +50,16 @@ class YobitTradeApi
     {
         $this->publicApiKey = $publicKey;
         $this->privateApiKey = $privateKey;
+        $this->userAgent = 'Mozilla/5.0 (Windows NT 6.3; rv:36.0) Gecko/20100101 Firefox/36.0';
         $this->cookies = new FileCookieJar($this->getCookieFilePath(), true);
 
         $this->client = new Client([
             'base_uri' => static::BASE_URI,
             'cookies' => $this->cookies,
             'timeout' => 30.0,
+            'headers' => [
+                'User-Agent' => $this->userAgent,
+            ]
         ]);
     }
 
@@ -76,8 +85,12 @@ class YobitTradeApi
         $result = shell_exec(
             'phantomjs '.
             __DIR__ . '/cloudflare-challenge.js ' .
-            ((string) $this->client->getConfig('base_uri')) .
-            ' "' . $this->arrayToQueryString($post) . '"'
+            ((string) $this->client->getConfig('base_uri')) . // url
+            ' "' . $this->arrayToQueryString($post) . '"' .  // post params
+            ' "' . $this->arrayToQueryString([  // header param
+                "Sign" => $this->generateSign($post),
+                "Key" => $this->publicApiKey
+            ]) . '"'
         );
         if ($result === null) {
             throw new ApiDDosException();
