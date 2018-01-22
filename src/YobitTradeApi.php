@@ -6,6 +6,7 @@ use GuzzleHttp\Client;
 use GuzzleHttp\Cookie\FileCookieJar;
 use GuzzleHttp\Exception\ClientException;
 use GuzzleHttp\Exception\RequestException;
+use OlegStyle\YobitApi\Exceptions\ApiBadResponseException;
 use OlegStyle\YobitApi\Exceptions\ApiDDosException;
 use OlegStyle\YobitApi\Exceptions\ApiDisabledException;
 use OlegStyle\YobitApi\Models\CurrencyPair;
@@ -74,7 +75,7 @@ class YobitTradeApi
     }
 
     /**
-     * @throws ApiDDosException|ApiDisabledException
+     * @throws ApiDDosException|ApiDisabledException|ApiBadResponseException
      */
     protected function cloudFlareChallenge(array $post): ?array
     {
@@ -150,7 +151,7 @@ class YobitTradeApi
     }
 
     /**
-     * @throws ApiDDosException|ApiDisabledException
+     * @throws ApiDDosException|ApiDisabledException|ApiBadResponseException
      */
     public function getResponse(string $method, array $post = [], ?bool $retry = false): array
     {
@@ -186,7 +187,7 @@ class YobitTradeApi
     }
 
     /**
-     * @throws ApiDisabledException|ApiDDosException
+     * @throws ApiDisabledException|ApiDDosException|ApiBadResponseException
      */
     public function handleResponse(?ResponseInterface $response): ?array
     {
@@ -204,15 +205,25 @@ class YobitTradeApi
             throw new ApiDDosException($responseBody);
         }
 
-        return json_decode($responseBody, true);
+        $result = json_decode($responseBody, true);
+        if ($result === null || $result['success'] != 1 || !isset($result['return'])) {
+            throw new ApiBadResponseException($responseBody);
+        }
+
+        return $result['return'];
     }
 
-
+    /**
+     * @throws ApiBadResponseException|ApiDDosException|ApiDisabledException
+     */
     public function getInfo(): array
     {
         return $this->getResponse('getInfo');
     }
 
+    /**
+     * @throws ApiBadResponseException|ApiDDosException|ApiDisabledException
+     */
     public function getActiveOrders(CurrencyPair $pair): array
     {
         return $this->getResponse('ActiveOrders', [
@@ -220,7 +231,10 @@ class YobitTradeApi
         ]);
     }
 
-    public function trade(CurrencyPair $pair, string $type, float $rate, float $amount)
+    /**
+     * @throws ApiBadResponseException|ApiDDosException|ApiDisabledException
+     */
+    public function trade(CurrencyPair $pair, string $type, float $rate, float $amount): array
     {
         return $this->getResponse('Trade', [
             'pair' => (string) $pair,
@@ -230,14 +244,20 @@ class YobitTradeApi
         ]);
     }
 
-    public function cancelOrder(int $orderId)
+    /**
+     * @throws ApiBadResponseException|ApiDDosException|ApiDisabledException
+     */
+    public function cancelOrder(int $orderId): array
     {
         return $this->getResponse('CancelOrder', [
             'order_id' => $orderId,
         ]);
     }
 
-    public function getOrderInfo(int $orderId)
+    /**
+     * @throws ApiBadResponseException|ApiDDosException|ApiDisabledException
+     */
+    public function getOrderInfo(int $orderId): array
     {
         return $this->getResponse('OrderInfo', [
             'order_id' => $orderId,
