@@ -54,9 +54,14 @@ class YobitTradeApi
         ]);
     }
 
+    protected function getCookieFileName(): string
+    {
+        return 'yobit_trade_' . md5($this->publicApiKey . $this->privateApiKey) . '_cookie.txt';
+    }
+
     protected function getCookieFilePath(): string
     {
-        return __DIR__ . '/yobit_trade_cookie.txt';
+        return __DIR__ . '/' . $this->getCookieFileName();
     }
 
     /**
@@ -72,7 +77,7 @@ class YobitTradeApi
             'phantomjs '.
             __DIR__ . '/cloudflare-challenge.js ' .
             ((string) $this->client->getConfig('base_uri')) .
-            ' "' . http_build_query(array_filter($post), '', '&') . '"'
+            ' "' . $this->arrayToQueryString($post) . '"'
         );
         if ($result === null) {
             throw new ApiDDosException();
@@ -118,9 +123,14 @@ class YobitTradeApi
         return $nonce;
     }
 
+    public function arrayToQueryString(array $array): string
+    {
+        return http_build_query(array_filter($array), '', '&');
+    }
+
     protected function generateSign(array $post): string
     {
-        $sign = http_build_query(array_filter($post), '', '&');
+        $sign = $this->arrayToQueryString($post);
         $sign = hash_hmac('sha512', $sign, $this->privateApiKey);
 
         return $sign;
