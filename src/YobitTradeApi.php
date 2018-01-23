@@ -9,6 +9,7 @@ use GuzzleHttp\Exception\RequestException;
 use OlegStyle\YobitApi\Exceptions\ApiBadResponseException;
 use OlegStyle\YobitApi\Exceptions\ApiDDosException;
 use OlegStyle\YobitApi\Exceptions\ApiDisabledException;
+use OlegStyle\YobitApi\Exceptions\InvalidNonceException;
 use OlegStyle\YobitApi\Models\CurrencyPair;
 use Psr\Http\Message\ResponseInterface;
 
@@ -151,7 +152,7 @@ class YobitTradeApi
     }
 
     /**
-     * @throws ApiDDosException|ApiDisabledException|ApiBadResponseException
+     * @throws ApiDDosException|ApiDisabledException|ApiBadResponseException|InvalidNonceException
      */
     public function getResponse(string $method, array $post = [], ?bool $retry = false): array
     {
@@ -187,7 +188,7 @@ class YobitTradeApi
     }
 
     /**
-     * @throws ApiDisabledException|ApiDDosException|ApiBadResponseException
+     * @throws ApiDisabledException|ApiDDosException|ApiBadResponseException|InvalidNonceException
      */
     public function handleResponse(?ResponseInterface $response): ?array
     {
@@ -206,15 +207,27 @@ class YobitTradeApi
         }
 
         $result = json_decode($responseBody, true);
-        if ($result === null || $result['success'] != 1 || !isset($result['return'])) {
+        if ($result === null) {
             throw new ApiBadResponseException($responseBody);
+        }
+
+        if (!isset($result['success']) || $result['success'] != 1) {
+            if (isset($result['error']) && preg_match('/invalid nonce/i', $result['error'])) {
+                throw new InvalidNonceException($responseBody);
+            }
+
+            throw new ApiBadResponseException($responseBody);
+        }
+
+        if (!isset($result['return'])) {
+            return [];
         }
 
         return $result['return'];
     }
 
     /**
-     * @throws ApiBadResponseException|ApiDDosException|ApiDisabledException
+     * @throws ApiBadResponseException|ApiDDosException|ApiDisabledException|InvalidNonceException
      */
     public function getInfo(): array
     {
@@ -222,7 +235,7 @@ class YobitTradeApi
     }
 
     /**
-     * @throws ApiBadResponseException|ApiDDosException|ApiDisabledException
+     * @throws ApiBadResponseException|ApiDDosException|ApiDisabledException|InvalidNonceException
      */
     public function getActiveOrders(CurrencyPair $pair): array
     {
@@ -232,7 +245,7 @@ class YobitTradeApi
     }
 
     /**
-     * @throws ApiBadResponseException|ApiDDosException|ApiDisabledException
+     * @throws ApiBadResponseException|ApiDDosException|ApiDisabledException|InvalidNonceException
      */
     public function trade(CurrencyPair $pair, string $type, float $rate, float $amount): array
     {
@@ -245,7 +258,7 @@ class YobitTradeApi
     }
 
     /**
-     * @throws ApiBadResponseException|ApiDDosException|ApiDisabledException
+     * @throws ApiBadResponseException|ApiDDosException|ApiDisabledException|InvalidNonceException
      */
     public function cancelOrder(int $orderId): array
     {
@@ -255,7 +268,7 @@ class YobitTradeApi
     }
 
     /**
-     * @throws ApiBadResponseException|ApiDDosException|ApiDisabledException
+     * @throws ApiBadResponseException|ApiDDosException|ApiDisabledException|InvalidNonceException
      */
     public function getOrderInfo(int $orderId): array
     {
