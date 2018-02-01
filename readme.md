@@ -31,8 +31,8 @@ and trade api (`\OlegStyle\YobitApi\YobitTradeApi`)
 
 ```
 $pairs = [
-   new \OlegStyle\YobitApi\CurrencyPair('btc', 'eth'),
-   new \OlegStyle\YobitApi\CurrencyPair('bch, 'btc'),
+   new \OlegStyle\YobitApi\Models\CurrencyPair('btc', 'eth'),
+   new \OlegStyle\YobitApi\Models\CurrencyPair('bch', 'btc'),
 ];
 $publicApi = new \OlegStyle\YobitApi\YobitPublicApi();
 $publicApi->getInfo(); // get info about all pairs
